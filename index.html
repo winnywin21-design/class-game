@@ -126,23 +126,17 @@
     </div>
   </div>
 
-  <!-- 배경음악 -->
-  <audio id="bgm" src="Turbo_Cartridge.mp3" loop></audio>
-
 <script>
   const videoWrap    = document.getElementById('videoWrap');
   const video        = document.getElementById('introVideo');
   const playOverlay  = document.getElementById('playOverlay');
   const buttonScreen = document.getElementById('buttonScreen');
-  const bgm          = document.getElementById('bgm');
 
   // URL에 ?skip=1 있으면 영상 건너뛰고 바로 버튼 화면
   const params = new URLSearchParams(window.location.search);
   if (params.get('skip') === '1') {
     videoWrap.style.display = 'none';
     buttonScreen.style.display = 'flex';
-    bgm.volume = 0.5;
-    bgm.play().catch(()=>{});
   }
 
   function startVideo() {
@@ -158,12 +152,9 @@
   function showButtons() {
     videoWrap.style.display = 'none';
     buttonScreen.style.display = 'flex';
-    bgm.volume = 0.5;
-    bgm.play().catch(()=>{});
   }
 
   function goGame(url) {
-    bgm.pause();
     window.location.href = url;
   }
 </script>
