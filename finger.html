@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>손가락으로 대푯값을 맞춰라!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Fredoka:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #0e0c0a;
+      color: #fff;
+      font-family: "Noto Sans KR", sans-serif;
+    }
+
+    /* ─── SCREENS ─── */
+    #titleScreen, #guideModal, #gameScreen, #resultScreen {
+      position: fixed; inset: 0;
+    }
+
+    /* ─── TITLE SCREEN ─── */
+    #titleScreen {
+      z-index: 30;
+      display: flex; align-items: center; justify-content: center;
+      background:
+        radial-gradient(circle at 22% 18%, rgba(255,223,128,.20) 0%, transparent 30%),
+        radial-gradient(circle at 78% 72%, rgba(120,180,255,.12) 0%, transparent 28%),
+        linear-gradient(160deg, #1b1812, #0f0d0b);
+    }
+
+    .titleWrap { text-align: center; padding: 24px; }
+    .gameTitle  { line-height: 1.08; letter-spacing: -1px; }
+    .titleLine  { display: block; margin: .05em 0; }
+    .titleChar  {
+      display: inline-block;
+      opacity: 0; transform: translateY(16px);
+      animation: charIn .55s ease forwards;
+    }
+    .bigWord {
+      font-family: "Fredoka", "Noto Sans KR", sans-serif;
+      font-size: clamp(68px, 9vw, 122px); font-weight: 700;
+      color: #ffe08a;
+      text-shadow: 0 1px 0 #fff0bf, 0 2px 0 #e8c968, 0 10px 30px rgba(0,0,0,.3);
+    }
+    .normalWord {
+      font-family: "Fredoka", "Noto Sans KR", sans-serif;
+      font-size: clamp(44px, 6.2vw, 78px); font-weight: 600;
+      color: #fff8e8;
+    }
+    .titleButtonRow {
+      margin-top: 40px;
+      opacity: 0;
+      animation: fadeUp .9s ease forwards;
+      animation-delay: 2.6s;
+    }
+
+    /* ─── CLAY BUTTON ─── */
+    .clayBtn {
+      border: none; border-radius: 999px;
+      padding: 14px 28px; cursor: pointer;
+      font-family: "Nunito", "Noto Sans KR", sans-serif;
+      font-size: 20px; font-weight: 900; letter-spacing: .2px;
+      color: #5f4a19;
+      background: linear-gradient(180deg, #fff2bd 0%, #f7df86 100%);
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.75),
+        inset 0 -2px 0 rgba(196,156,46,.35),
+        0 6px 0 #d7b658,
+        0 12px 26px rgba(84,63,11,.18);
+      transition: transform .12s, box-shadow .12s, filter .12s;
+    }
+    .clayBtn:hover  { filter: brightness(1.04); }
+    .clayBtn:active {
+      transform: translateY(4px);
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.75),
+        inset 0 -2px 0 rgba(196,156,46,.35),
+        0 2px 0 #d7b658,
+        0 6px 14px rgba(84,63,11,.14);
+    }
+    .startBtn { min-width: 280px; min-height: 64px; font-size: 22px; }
+
+    /* ─── GUIDE MODAL ─── */
+    #guideModal {
+      z-index: 40; display: none;
+      align-items: center; justify-content: center; padding: 20px;
+      background: rgba(10,8,6,.65);
+      backdrop-filter: blur(6px);
+    }
+    .modalBox {
+      width: min(760px, 94vw);
+      background: #fffaf0; color: #2e2923;
+      border-radius: 28px; padding: 32px 30px 26px;
+      position: relative;
+      box-shadow: 0 28px 60px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.85);
+    }
+    .closeBtn {
+      position: absolute; top: 14px; right: 14px;
+      width: 38px; height: 38px; border: none; border-radius: 50%;
+      background: #f1eadc; color: #5c5142;
+      font-size: 18px; font-weight: 800; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    .modalTitle {
+      font-family: "Fredoka", "Noto Sans KR", sans-serif;
+      font-size: 30px; font-weight: 600; color: #473d2f; margin-bottom: 16px;
+    }
+    .modalText  { font-size: 18px; line-height: 2; color: #4b433a; margin-bottom: 22px; }
+    .modalText strong { color: #3a3020; }
+
+    /* ─── GAME SCREEN ─── */
+    #gameScreen { display: none; background: #000; }
+
+    #videoStage { position: absolute; inset: 0; background: #000; }
+    video, canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      transform: scaleX(-1);
+    }
+    canvas { background: #000; }
+
+    /* ─── HUD ─── */
+    #hud { position: absolute; inset: 0; }
+
+    #topGrad {
+      position: absolute; top: 0; left: 0; right: 0; height: 130px;
+      background: linear-gradient(180deg, rgba(0,0,0,.78) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* Progress + score */
+    #topBar {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 10px 20px 0;
+      pointer-events: none;
+    }
+    #progressTrack {
+      height: 6px; border-radius: 999px;
+      background: rgba(255,255,255,.15); overflow: hidden; margin-bottom: 8px;
+    }
+    #progressFill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, #ffe082, #ffca28);
+      box-shadow: 0 0 8px rgba(255,210,80,.5);
+      width: 0%;
+      transition: width .5s ease;
+    }
+    #scoreRow {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #scoreText {
+      font-family: "Nunito", sans-serif;
+      font-size: clamp(18px, 2vw, 26px); font-weight: 900;
+      color: #fff8e8;
+      text-shadow: 0 2px 8px rgba(0,0,0,.7);
+    }
+    #questionNumText {
+      font-family: "Nunito", sans-serif;
+      font-size: clamp(16px, 1.8vw, 22px); font-weight: 800;
+      color: rgba(255,248,220,.75);
+      text-shadow: 0 2px 8px rgba(0,0,0,.6);
+    }
+
+    /* Question panel */
+    #questionPanel {
+      position: absolute; top: 72px; left: 50%; transform: translateX(-50%);
+      width: min(900px, 86vw);
+      background: rgba(8,6,4,.62);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 22px; padding: 14px 20px 16px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,.45);
+    }
+    #typeBadge {
+      display: inline-block; border-radius: 999px;
+      padding: 3px 16px; font-size: 14px; font-weight: 800;
+      letter-spacing: .5px; margin-bottom: 10px;
+    }
+    .badge-mean     { background: rgba(79,195,247,.18);  color: #4fc3f7; border: 1px solid rgba(79,195,247,.45); }
+    .badge-median   { background: rgba(206,147,216,.18); color: #e1bee7; border: 1px solid rgba(206,147,216,.45); }
+    .badge-mode     { background: rgba(255,183,77,.18);  color: #ffb74d; border: 1px solid rgba(255,183,77,.45); }
+    .badge-tutorial { background: rgba(165,214,167,.18); color: #a5d6a7; border: 1px solid rgba(165,214,167,.45); }
+
+    #questionValues {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .valueChip {
+      min-width: 44px; height: 44px; padding: 0 10px;
+      border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: "Nunito", sans-serif;
+      font-size: 22px; font-weight: 900;
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.22);
+      color: #fff;
+    }
+    .valueSep { font-size: 18px; color: rgba(255,255,255,.35); }
+
+    #questionText {
+      font-size: clamp(20px, 2.2vw, 32px); font-weight: 900;
+      color: #fffaf0;
+      text-shadow: 0 2px 10px rgba(0,0,0,.9);
+      white-space: pre-line;
+    }
+
+    /* Hold ring */
+    #holdIndicator {
+      position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .holdLabel {
+      font-size: 12px; font-weight: 800; letter-spacing: .5px;
+      color: rgba(255,248,220,.7);
+      text-shadow: 0 1px 4px rgba(0,0,0,.8);
+      text-transform: uppercase;
+    }
+    #holdSvg {
+      width: clamp(100px, 14vw, 150px);
+      height: clamp(100px, 14vw, 150px);
+      filter: drop-shadow(0 4px 18px rgba(0,0,0,.55));
+      overflow: visible;
+    }
+
+    /* Feedback flash */
+    #feedbackFlash {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    }
+    #feedbackFlash.flash-correct { animation: flashGreen .7s ease forwards; }
+    #feedbackFlash.flash-wrong   { animation: flashRed   .6s ease forwards; }
+
+    /* Center feedback */
+    #centerMessage {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%,-50%);
+      pointer-events: none; opacity: 0; text-align: center;
+    }
+    #centerMessage.showCorrect { animation: popCenter  1s   ease forwards; }
+    #centerMessage.showWrong   { animation: shakeCenter .8s ease forwards; }
+    .feedbackEmoji { font-size: clamp(64px, 10vw, 100px); line-height: 1; }
+    .feedbackWord  {
+      font-size: clamp(40px, 5.5vw, 68px); font-weight: 900;
+      color: #fff;
+      text-shadow: 0 4px 20px rgba(0,0,0,.6);
+    }
+
+    /* Bottom controls */
+    #bottomBar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 14px 20px;
+      display: flex; justify-content: flex-end; gap: 10px;
+      background: linear-gradient(0deg, rgba(0,0,0,.6) 0%, transparent 100%);
+    }
+
+    /* ─── RESULT SCREEN ─── */
+    #resultScreen {
+      z-index: 50; display: none;
+      align-items: center; justify-content: center; padding: 20px;
+      background: rgba(10,8,6,.88);
+      backdrop-filter: blur(10px);
+    }
+    .resultBox {
+      width: min(560px, 94vw);
+      background: #fffaf0; color: #3f362c;
+      border-radius: 30px; padding: 36px 28px 30px;
+      text-align: center;
+      box-shadow: 0 30px 60px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.85);
+    }
+    .resultTitle {
+      font-family: "Fredoka", "Nunito", sans-serif;
+      font-size: 50px; font-weight: 600; color: #6a5525; margin-bottom: 8px;
+    }
+    .resultStars  { font-size: 42px; letter-spacing: 2px; margin-bottom: 10px; }
+    .resultScore  {
+      font-family: "Nunito", sans-serif;
+      font-size: 58px; font-weight: 900; color: #40362c; margin-bottom: 8px;
+    }
+    .resultComment {
+      font-family: "Fredoka", "Noto Sans KR", sans-serif;
+      font-size: 24px; font-weight: 500; color: #66594c;
+      line-height: 1.5; margin-bottom: 26px;
+    }
+
+    /* ─── KEYFRAMES ─── */
+    @keyframes charIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popCenter {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(.85); }
+      18%  { opacity: 1; transform: translate(-50%,-50%) scale(1.06); }
+      75%  { opacity: 1; transform: translate(-50%,-50%) scale(1.0); }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(1.0); }
+    }
+    @keyframes shakeCenter {
+      0%   { opacity: 0;  transform: translate(-50%,-50%); }
+      15%  { opacity: 1;  transform: translate(calc(-50% - 10px),-50%); }
+      30%  { transform: translate(calc(-50% + 10px),-50%); }
+      45%  { transform: translate(calc(-50% - 7px),-50%); }
+      60%  { transform: translate(calc(-50% + 7px),-50%); }
+      80%  { opacity: 1;  transform: translate(-50%,-50%); }
+      100% { opacity: 0;  transform: translate(-50%,-50%); }
+    }
+    @keyframes flashGreen {
+      0%   { opacity: 0; background: rgba(76,175,80,0); }
+      25%  { opacity: 1; background: rgba(76,175,80,.28); }
+      100% { opacity: 0; background: rgba(76,175,80,0); }
+    }
+    @keyframes flashRed {
+      0%   { opacity: 0; background: rgba(244,67,54,0); }
+      25%  { opacity: 1; background: rgba(244,67,54,.22); }
+      100% { opacity: 0; background: rgba(244,67,54,0); }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 600px) {
+      #holdIndicator { right: 10px; }
+      #questionPanel { top: 68px; padding: 10px 14px 12px; }
+      .valueChip     { min-width: 36px; height: 36px; font-size: 18px; }
+      #bottomBar     { gap: 6px; padding: 10px 12px; }
+      .clayBtn       { padding: 12px 20px; font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="titleScreen">
+  <div class="titleWrap">
+    <h1 class="gameTitle" id="animatedTitle"></h1>
+    <div class="titleButtonRow">
+      <button class="clayBtn startBtn" id="openGuideBtn">GAME START</button>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE MODAL -->
+<div id="guideModal">
+  <div class="modalBox">
+    <button class="closeBtn" id="closeGuideBtn">✕</button>
+    <h2 class="modalTitle">게임 방법</h2>
+    <div class="modalText">
+      1. 화면 위에 <strong>평균, 중앙값, 최빈값</strong> 문제가 나옵니다.<br>
+      2. 답은 항상 <strong>1 ~ 10</strong>의 자연수입니다.<br>
+      3. 두 손을 합쳐 손가락으로 답을 나타내세요.<br>
+      4. 예: 7은 손가락 5 + 2개로 표현해도 됩니다.<br>
+      5. 같은 숫자를 <strong>약 1초</strong> 유지하면 입력됩니다.<br>
+      6. 총 <strong>20문제</strong>를 풉니다.
+    </div>
+    <button class="clayBtn" id="realStartBtn">START !</button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen">
+  <div id="videoStage">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div id="feedbackFlash"></div>
+
+  <div id="hud">
+    <div id="topGrad"></div>
+
+    <div id="topBar">
+      <div id="progressTrack"><div id="progressFill"></div></div>
+      <div id="scoreRow">
+        <div id="scoreText">정답 0 / 20</div>
+        <div id="questionNumText">문제 1 / 20</div>
+      </div>
+    </div>
+
+    <div id="questionPanel">
+      <div id="typeBadge" class="badge-tutorial">튜토리얼</div>
+      <div id="questionValues"></div>
+      <div id="questionText">손가락 1개를 펴보세요!</div>
+    </div>
+
+    <!-- Hold ring: right-center -->
+    <div id="holdIndicator">
+      <div class="holdLabel">입력 숫자</div>
+      <svg id="holdSvg" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" fill="rgba(0,0,0,.35)"/>
+        <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="10"/>
+        <circle id="holdRingFill" cx="60" cy="60" r="52"
+                fill="none" stroke="#ffe082" stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="326.73" stroke-dashoffset="326.73"
+                transform="rotate(-90 60 60)"/>
+        <text id="holdNumText" x="60" y="60"
+              font-family="Nunito, sans-serif" font-size="54" font-weight="900"
+              fill="#fff9ec" dominant-baseline="central" text-anchor="middle">-</text>
+      </svg>
+      <div id="holdHintText" class="holdLabel">손가락을 펴보세요</div>
+    </div>
+
+    <div id="centerMessage"></div>
+
+    <div id="bottomBar">
+      <button class="clayBtn" id="nextBtn">다음 문제 →</button>
+      <button class="clayBtn" id="showGuideAgainBtn">방법 보기</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="resultScreen">
+  <div class="resultBox">
+    <h2 class="resultTitle">GAME OVER</h2>
+    <div class="resultStars" id="resultStars">⭐⭐⭐</div>
+    <div class="resultScore" id="finalScoreText">0 / 20</div>
+    <div class="resultComment" id="finalCommentText">끝까지 잘 해냈어요!</div>
+    <button class="clayBtn" id="restartBtn">RESTART</button>
+  </div>
+</div>
+
+<script type="module">
+  import { HandLandmarker, FilesetResolver }
+    from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+  // ── DOM refs ──
+  const titleScreen       = document.getElementById("titleScreen");
+  const guideModal        = document.getElementById("guideModal");
+  const gameScreen        = document.getElementById("gameScreen");
+  const resultScreen      = document.getElementById("resultScreen");
+
+  const openGuideBtn      = document.getElementById("openGuideBtn");
+  const closeGuideBtn     = document.getElementById("closeGuideBtn");
+  const realStartBtn      = document.getElementById("realStartBtn");
+  const nextBtn           = document.getElementById("nextBtn");
+  const showGuideAgainBtn = document.getElementById("showGuideAgainBtn");
+  const restartBtn        = document.getElementById("restartBtn");
+
+  const scoreText         = document.getElementById("scoreText");
+  const questionNumText   = document.getElementById("questionNumText");
+  const progressFill      = document.getElementById("progressFill");
+  const typeBadge         = document.getElementById("typeBadge");
+  const questionValues    = document.getElementById("questionValues");
+  const questionText      = document.getElementById("questionText");
+  const holdNumText       = document.getElementById("holdNumText");
+  const holdRingFill      = document.getElementById("holdRingFill");
+  const holdHintText      = document.getElementById("holdHintText");
+  const centerMessage     = document.getElementById("centerMessage");
+  const feedbackFlash     = document.getElementById("feedbackFlash");
+  const finalScoreText    = document.getElementById("finalScoreText");
+  const finalCommentText  = document.getElementById("finalCommentText");
+  const resultStars       = document.getElementById("resultStars");
+  const animatedTitle     = document.getElementById("animatedTitle");
+
+  const video  = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const ctx    = canvas.getContext("2d");
+
+  // ── Constants ──
+  const HOLD_MS      = 1000;
+  const RING_C       = 2 * Math.PI * 52; // ≈ 326.73
+  const RECENT_LIMIT = 22;
+
+  // ── State ──
+  let handLandmarker, lastVideoTime = -1;
+  let gameStarted = false, score = 0, currentIndex = 0;
+  let currentProblem = null;
+  let holdStartTime = null, heldNumber = null, solvedLock = false;
+  let tutorialStep = true;
+  const recentTotals = [];
+
+  // ── Problems (fixed: [2,2,4] had wrong answer) ──
+  const allProblems = [
+    { type:"평균",   values:[1,3,5],        answer:3  },
+    { type:"평균",   values:[2,4,6],        answer:4  },
+    { type:"평균",   values:[3,5,7],        answer:5  },
+    { type:"평균",   values:[4,6,8],        answer:6  },
+    { type:"평균",   values:[1,2,3],        answer:2  },
+    { type:"평균",   values:[1,4,7],        answer:4  },
+    { type:"평균",   values:[3,6,9],        answer:6  },
+    { type:"평균",   values:[2,4,8,10],     answer:6  },
+    { type:"중앙값", values:[1,3,5],        answer:3  },
+    { type:"중앙값", values:[2,4,6,8,10],   answer:6  },
+    { type:"중앙값", values:[1,2,2,9,10],   answer:2  },
+    { type:"중앙값", values:[3,4,5,6,7],    answer:5  },
+    { type:"중앙값", values:[4,4,5,9,10],   answer:5  },
+    { type:"중앙값", values:[2,3,7,8,10],   answer:7  },
+    { type:"최빈값", values:[1,2,2,3],      answer:2  },
+    { type:"최빈값", values:[4,4,4,7,8],    answer:4  },
+    { type:"최빈값", values:[5,6,6,6,9],    answer:6  },
+    { type:"최빈값", values:[3,3,5,5,5],    answer:5  },
+    { type:"최빈값", values:[2,7,7,9],      answer:7  },
+    { type:"최빈값", values:[8,8,8,1,2],    answer:8  },
+    { type:"최빈값", values:[10,10,3,4,10], answer:10 }
+  ];
+  let gameProblems = [];
+
+  // ── Badge classes ──
+  const BADGE_CLASS = { "평균":"badge-mean", "중앙값":"badge-median", "최빈값":"badge-mode" };
+
+  // ── Title animation ──
+  function buildAnimatedTitle() {
+    const lines = [
+      [{ text:"손가락", cls:"bigWord" }, { text:"으로", cls:"normalWord" }],
+      [{ text:"대푯값", cls:"bigWord" }, { text:"을 맞춰라!", cls:"normalWord" }]
+    ];
+    let delay = 0.15;
+    animatedTitle.innerHTML = "";
+    lines.forEach(line => {
+      const lineEl = document.createElement("span");
+      lineEl.className = "titleLine";
+      line.forEach(part => {
+        const partEl = document.createElement("span");
+        partEl.className = part.cls;
+        [...part.text].forEach(ch => {
+          const charEl = document.createElement("span");
+          charEl.className = "titleChar";
+          charEl.textContent = ch === " " ? " " : ch;
+          charEl.style.animationDelay = `${delay}s`;
+          delay += 0.08;
+          partEl.appendChild(charEl);
+        });
+        lineEl.appendChild(partEl);
+      });
+      animatedTitle.appendChild(lineEl);
+    });
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ── UI helpers ──
+  function setQuestion(problem) {
+    typeBadge.textContent = problem.type;
+    typeBadge.className = BADGE_CLASS[problem.type] || "badge-tutorial";
+
+    questionValues.innerHTML = "";
+    problem.values.forEach((v, i) => {
+      const chip = document.createElement("span");
+      chip.className = "valueChip";
+      chip.textContent = v;
+      questionValues.appendChild(chip);
+      if (i < problem.values.length - 1) {
+        const sep = document.createElement("span");
+        sep.className = "valueSep";
+        sep.textContent = ",";
+        questionValues.appendChild(sep);
+      }
+    });
+
+    questionText.textContent = `${problem.type}은?`;
+  }
+
+  function updateHUD() {
+    scoreText.textContent = `정답 ${score} / 20`;
+    const qNum = Math.min(currentIndex + 1, 20);
+    questionNumText.textContent = `문제 ${qNum} / 20`;
+    progressFill.style.width = `${(currentIndex / 20) * 100}%`;
+  }
+
+  function setRing(progress, number) {
+    const p = Math.max(0, Math.min(1, progress));
+    holdRingFill.setAttribute("stroke-dashoffset", RING_C * (1 - p));
+    holdRingFill.setAttribute("stroke", p > 0.65 ? "#69f0ae" : "#ffe082");
+    holdNumText.textContent  = number > 0 ? number : "-";
+    holdHintText.textContent = number > 0
+      ? (p >= 1 ? "입력됨!" : "유지하세요...")
+      : "손가락을 펴보세요";
+  }
+
+  function triggerFeedback(el, cls, duration) {
+    el.classList.remove("showCorrect","showWrong","flash-correct","flash-wrong");
+    void el.offsetWidth; // reflow
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), duration);
+  }
+
+  function showCorrect() {
+    sfxCorrect();
+    centerMessage.innerHTML = `<div class="feedbackEmoji">⭕</div><div class="feedbackWord">정답!</div>`;
+    triggerFeedback(centerMessage, "showCorrect", 1050);
+    triggerFeedback(feedbackFlash, "flash-correct", 750);
+  }
+
+  function showWrong() {
+    sfxWrong();
+    centerMessage.innerHTML = `<div class="feedbackEmoji">❌</div><div class="feedbackWord">아쉽습니다!</div>`;
+    triggerFeedback(centerMessage, "showWrong", 850);
+    triggerFeedback(feedbackFlash, "flash-wrong", 650);
+  }
+
+  // ── Camera ──
+  async function setupCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:1280, height:720, facingMode:"user" }, audio:false
+    });
+    video.srcObject = stream;
+    return new Promise(resolve => {
+      video.onloadedmetadata = () => { video.play(); resolve(); };
+    });
+  }
+
+  async function setupHandLandmarker() {
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath:
+          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+      },
+      runningMode: "VIDEO",
+      numHands: 2
+    });
+  }
+
+  // ── Game flow ──
+  function startGame() {
+    titleScreen.style.display  = "none";
+    guideModal.style.display   = "none";
+    resultScreen.style.display = "none";
+    gameScreen.style.display   = "block";
+
+    gameProblems = shuffle(allProblems).slice(0, 20);
+    score = 0; currentIndex = 0;
+    gameStarted = true; solvedLock = false; tutorialStep = true;
+    holdStartTime = null; heldNumber = null;
+    recentTotals.length = 0;
+
+    setRing(0, 0);
+    updateHUD();
+
+    typeBadge.className = "badge-tutorial";
+    typeBadge.textContent = "튜토리얼";
+    questionValues.innerHTML = "";
+    questionText.textContent = "손가락 1개를 펴보세요!";
+  }
+
+  function beginRealGame() {
+    tutorialStep = false;
+    currentIndex = 0;
+    nextProblem();
+  }
+
+  function nextProblem() {
+    if (currentIndex >= gameProblems.length) { finishGame(); return; }
+    currentProblem = gameProblems[currentIndex];
+    solvedLock = false; holdStartTime = null; heldNumber = null;
+    recentTotals.length = 0;
+    setRing(0, 0);
+    updateHUD();
+    setQuestion(currentProblem);
+  }
+
+  function finishGame() {
+    gameStarted = false;
+    progressFill.style.width = "100%";
+    resultScreen.style.display = "flex";
+    finalScoreText.textContent = `${score} / 20`;
+
+    let stars, comment;
+    if      (score === 20) { stars = "⭐⭐⭐"; comment = "완벽해요! 정말 멋지게 해냈어요!"; }
+    else if (score >= 16)  { stars = "⭐⭐⭐"; comment = "아주 잘했어요. 거의 다 맞혔어요!"; }
+    else if (score >= 12)  { stars = "⭐⭐";  comment = "좋아요! 다시 하면 더 잘할 수 있어요."; }
+    else if (score >= 6)   { stars = "⭐";   comment = "잘 도전했어요! 한번 더 해볼까요?"; }
+    else                   { stars = "💪";   comment = "끝까지 한 게 정말 좋아요. 다시 도전!"; }
+
+    resultStars.textContent        = stars;
+    finalCommentText.textContent   = comment;
+  }
+
+  // ── Hand drawing ──
+  const FINGER_TIP_COLORS = ["#ffe082","#80deea","#ce93d8","#a5d6a7","#ffab91"];
+
+  function drawHand(landmarks) {
+    const connections = [
+      [0,1],[1,2],[2,3],[3,4],
+      [0,5],[5,6],[6,7],[7,8],
+      [5,9],[9,10],[10,11],[11,12],
+      [9,13],[13,14],[14,15],[15,16],
+      [13,17],[17,18],[18,19],[19,20],
+      [0,17]
+    ];
+
+    ctx.lineWidth = 3;
+    connections.forEach(([a, b]) => {
+      const x1 = landmarks[a].x * canvas.width, y1 = landmarks[a].y * canvas.height;
+      const x2 = landmarks[b].x * canvas.width, y2 = landmarks[b].y * canvas.height;
+      const g = ctx.createLinearGradient(x1,y1,x2,y2);
+      g.addColorStop(0, "rgba(255,224,130,.75)");
+      g.addColorStop(1, "rgba(255,255,255,.45)");
+      ctx.strokeStyle = g;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    });
+
+    const fingerGroups = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
+    fingerGroups.forEach((group, fi) => {
+      group.forEach(idx => {
+        const p = landmarks[idx];
+        const x = p.x * canvas.width, y = p.y * canvas.height;
+        const isTip = idx % 4 === 0;
+        ctx.beginPath();
+        ctx.arc(x, y, isTip ? 7 : 4, 0, Math.PI * 2);
+        ctx.fillStyle = isTip ? FINGER_TIP_COLORS[fi] : "rgba(255,255,255,.6)";
+        ctx.fill();
+      });
+    });
+
+    const w = landmarks[0];
+    ctx.beginPath();
+    ctx.arc(w.x * canvas.width, w.y * canvas.height, 5, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,.5)";
+    ctx.fill();
+  }
+
+  // ── Finger counting ──
+  function dist(a, b) {
+    return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
+  }
+
+  function countSingleHand(landmarks, handednessLabel) {
+    const wrist     = landmarks[0];
+    const indexMcp  = landmarks[5];
+    const middleMcp = landmarks[9];
+    const pinkyMcp  = landmarks[17];
+
+    const palmWidth  = Math.max(dist(indexMcp, pinkyMcp), 0.001);
+    const palmHeight = Math.max(dist(wrist, middleMcp), 0.001);
+
+    let count = 0, extCount = 0;
+
+    // ── Index, Middle, Ring, Pinky: [tip, dip, pip, mcp] ──
+    const fingerDefs = [
+      [8,  7,  6,  5 ],
+      [12, 11, 10, 9 ],
+      [16, 15, 14, 13],
+      [20, 19, 18, 17],
+    ];
+
+    for (const [ti, di, pi, mi] of fingerDefs) {
+      const tip = landmarks[ti];
+      const dip = landmarks[di];
+      const pip = landmarks[pi];
+      const mcp = landmarks[mi];
+
+      // Tip must be clearly above PIP (palm-height normalized)
+      const abovePip = (pip.y - tip.y) > palmHeight * 0.035;
+      // Tip must be above MCP
+      const aboveMcp = tip.y < mcp.y;
+      // DIP must not be curled below PIP (catches hook fingers)
+      const dipOk = dip.y < pip.y + palmHeight * 0.025;
+      // Finger extension ratio: tip-mcp vs pip-mcp
+      const extRatio = dist(tip, mcp) / (dist(pip, mcp) + 0.001);
+
+      if (abovePip && aboveMcp && dipOk && extRatio > 1.45) {
+        count++;
+        extCount++;
+      }
+    }
+
+    // ── Thumb ──
+    const thumbTip = landmarks[4];
+    const thumbIp  = landmarks[3];
+    const thumbMcp = landmarks[2];
+
+    const isRight = String(handednessLabel).toLowerCase().includes("right");
+
+    const t2index = dist(thumbTip, indexMcp);
+    const t2wrist = dist(thumbTip, wrist);
+
+    // Lateral spread: thumb tip vs thumb IP in the horizontal axis
+    const hSpread = isRight
+      ? thumbIp.x - thumbTip.x   // right hand: tip should be left of IP when open
+      : thumbTip.x - thumbIp.x;  // left hand: tip should be right of IP when open
+
+    // Primary: clearly abducted thumb
+    let thumbOpen = hSpread > palmWidth * 0.06
+      && t2index > palmWidth * 0.42
+      && t2wrist > palmWidth * 0.46;
+
+    // Relaxed for open-palm (all 4 fingers up)
+    if (!thumbOpen && extCount === 4) {
+      thumbOpen = t2index > palmWidth * 0.27
+        && Math.abs(thumbTip.x - thumbMcp.x) > palmWidth * 0.10;
+    }
+
+    // Extra: 3+ fingers up, thumb spread wide away from pinky side
+    if (!thumbOpen && extCount >= 3) {
+      thumbOpen = t2index > palmWidth * 0.52
+        && dist(thumbTip, pinkyMcp) > palmWidth * 0.88;
+    }
+
+    if (thumbOpen) count++;
+
+    return Math.max(0, Math.min(5, count));
+  }
+
+  function getMode(values) {
+    const map = new Map();
+    let bestVal = 0, bestCnt = 0;
+    for (const v of values) {
+      const c = (map.get(v) || 0) + 1;
+      map.set(v, c);
+      if (c > bestCnt) { bestCnt = c; bestVal = v; }
+    }
+    return bestVal;
+  }
+
+  function getStableTotal(raw) {
+    recentTotals.push(raw);
+    if (recentTotals.length > RECENT_LIMIT) recentTotals.shift();
+    if (recentTotals.length < 6) return raw;
+    const mode = getMode(recentTotals);
+    const cnt  = recentTotals.filter(v => v === mode).length;
+    return cnt >= Math.ceil(recentTotals.length * 0.52) ? mode : raw;
+  }
+
+  function updateStableAnswer(total) {
+    if (!gameStarted || solvedLock) return;
+
+    const stable = getStableTotal(total);
+    const now    = performance.now();
+
+    if (stable === 0) {
+      heldNumber = null; holdStartTime = null;
+      setRing(0, 0);
+      return;
+    }
+
+    if (heldNumber !== stable) {
+      heldNumber = stable;
+      holdStartTime = now;
+      setRing(0, stable);
+      return;
+    }
+
+    const progress = (now - holdStartTime) / HOLD_MS;
+    setRing(progress, stable);
+
+    if (progress < 1) return;
+
+    // ── Submit ──
+    if (tutorialStep) {
+      if (stable === 1) {
+        solvedLock = true;
+        showCorrect();
+        typeBadge.className = "badge-tutorial";
+        typeBadge.textContent = "튜토리얼";
+        questionValues.innerHTML = "";
+        questionText.textContent = "좋습니다!\n지금부터 게임을 시작합니다!";
+        setTimeout(() => { solvedLock = false; beginRealGame(); }, 1300);
+      }
+      return;
+    }
+
+    if (!currentProblem) return;
+
+    if (stable === currentProblem.answer) {
+      solvedLock = true;
+      score++;
+      showCorrect();
+      setTimeout(() => { currentIndex++; solvedLock = false; nextProblem(); }, 1050);
+    } else {
+      showWrong();
+      heldNumber = null; holdStartTime = null;
+      recentTotals.length = 0;
+      setRing(0, 0);
+    }
+  }
+
+  // ── Predict loop ──
+  async function predictLoop() {
+    if (!handLandmarker) { requestAnimationFrame(predictLoop); return; }
+
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const nowMs = performance.now();
+    if (video.currentTime !== lastVideoTime) {
+      lastVideoTime = video.currentTime;
+      const result = handLandmarker.detectForVideo(video, nowMs);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      let total = 0;
+      if (result.landmarks?.length > 0) {
+        result.landmarks.forEach((lm, i) => {
+          drawHand(lm);
+          total += countSingleHand(lm, result.handednesses?.[i]?.[0]?.categoryName || "");
+        });
+      }
+      updateStableAnswer(total);
+    }
+    requestAnimationFrame(predictLoop);
+  }
+
+  // ── Sound Effects (Web Audio API — no external files) ──
+  let _actx = null;
+
+  function getACtx() {
+    if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_actx.state === "suspended") _actx.resume();
+    return _actx;
+  }
+
+  function _tone(ctx, freq, type, t0, dur, vol) {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  // 정답 — 밝은 상행 4음 딩동 (C5→E5→G5→C6)
+  function sfxCorrect() {
+    try {
+      const ctx = getACtx(), t = ctx.currentTime;
+      [[523.25,0.00],[659.25,0.11],[783.99,0.22],[1046.50,0.33]].forEach(([f,dt]) => {
+        _tone(ctx, f,     "sine", t+dt, 0.42, 0.28);
+        _tone(ctx, f * 2, "sine", t+dt, 0.18, 0.05); // 배음 shimmer
+      });
+    } catch(e) {}
+  }
+
+  // 오답 — 낮게 꺼지는 버저 (280Hz → 100Hz)
+  function sfxWrong() {
+    try {
+      const ctx = getACtx(), t = ctx.currentTime;
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = "square";
+      osc.frequency.setValueAtTime(280, t);
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.48);
+      gain.gain.setValueAtTime(0.16, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      osc.start(t); osc.stop(t + 0.6);
+    } catch(e) {}
+  }
+
+  // 타이틀 — 반짝이는 상행 아르페지오 (C4→C6, 7음)
+  function sfxTitle() {
+    try {
+      const ctx = getACtx(), t = ctx.currentTime;
+      [[261.63,0.00],[329.63,0.09],[392.00,0.18],[523.25,0.27],
+       [659.25,0.36],[783.99,0.45],[1046.50,0.54]].forEach(([f,dt],i) => {
+        _tone(ctx, f, "sine", t+dt, 0.58 - dt*0.18, 0.20 - i*0.01);
+      });
+    } catch(e) {}
+  }
+
+  // ── Event listeners ──
+  openGuideBtn     .addEventListener("click", () => { sfxTitle(); guideModal.style.display = "flex"; });
+  closeGuideBtn    .addEventListener("click", () => { guideModal.style.display = "none"; });
+  realStartBtn     .addEventListener("click", () => startGame());
+  showGuideAgainBtn.addEventListener("click", () => { guideModal.style.display = "flex"; });
+  restartBtn       .addEventListener("click", () => startGame());
+  nextBtn.addEventListener("click", () => {
+    if (!gameStarted || tutorialStep) return;
+    currentIndex++;
+    nextProblem();
+  });
+
+  // ── Init ──
+  async function init() {
+    buildAnimatedTitle();
+    try {
+      await setupCamera();
+      await setupHandLandmarker();
+      predictLoop();
+    } catch (err) {
+      console.error(err);
+      alert("카메라 또는 손 인식 모델을 불러오지 못했어요.\n크롬에서 열고 웹캠 권한을 허용해 주세요.");
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

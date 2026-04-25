@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>대푯값 산성비 - Win95 v1.0</title>
+    <style>
+        /* 윈도우 95 시그니처 배경색 */
+        body {
+            background-color: #008080; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'MS Sans Serif', 'Arial', sans-serif;
+            -webkit-font-smoothing: none;
+        }
+
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background-color: #c0c0c0;
+            border: 3px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            position: relative;
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.2);
+        }
+
+        /* 제목 표시줄 */
+        #top-bar {
+            height: 28px;
+            background: linear-gradient(90deg, #000080, #1084d0);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        /* 윈도우 95 스타일 픽셀 하트 */
+        .pixel-heart {
+            width: 18px;
+            height: 16px;
+            background-color: #ff0000;
+            display: inline-block;
+            margin-left: 4px;
+            /* 픽셀 하트 모양을 위한 클립 패스 */
+            clip-path: polygon(
+                15% 0%, 35% 0%, 50% 15%, 65% 0%, 85% 0%, 100% 15%, 100% 45%, 50% 100%, 0% 45%, 0% 15%
+            );
+            box-shadow: inset -2px -2px 0px #800000;
+        }
+        .heart-empty {
+            background-color: #555;
+            box-shadow: none;
+        }
+
+        /* 게임 캔버스 */
+        #game-canvas {
+            width: 100%;
+            height: 480px;
+            position: relative;
+            background-color: #000; /* 산성비의 정석은 검정 배경 */
+            border: 3px inset #ffffff;
+            overflow: hidden;
+        }
+
+        /* 하단 컨트롤 바 */
+        #bottom-bar {
+            height: 85px;
+            background-color: #c0c0c0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-top: 2px solid #808080;
+        }
+
+        #answer-input {
+            width: 180px;
+            height: 30px;
+            background-color: white;
+            border: 3px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            font-size: 20px;
+            text-align: center;
+            outline: none;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 레트로 버튼 디자인 */
+        .btn {
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #000000 #000000 #ffffff;
+            padding: 5px 15px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 1px 1px 0px #808080;
+        }
+        .btn:active {
+            border-color: #000000 #ffffff #ffffff #000000;
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+
+        /* 오버레이 창 */
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #c0c0c0;
+            border: 2px solid #ffffff;
+            outline: 2px solid #000;
+            z-index: 100;
+            width: 400px;
+            text-align: center;
+            padding-bottom: 20px;
+        }
+        .overlay-header {
+            background-color: #000080;
+            color: white;
+            padding: 4px;
+            font-size: 12px;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .problem {
+            position: absolute;
+            color: #0f0; /* 레트로 터미널 그린 */
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 1px 1px 2px #000;
+            white-space: nowrap;
+        }
+
+        .hidden { display: none; }
+        .text-box {
+            background: #fff;
+            border: 2px inset #ffffff;
+            padding: 15px;
+            margin: 10px 20px;
+            text-align: left;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="top-bar">
+        <span>Statistics_Rain.exe</span>
+        <div id="info-display">LEVEL: <span id="level-val">1</span> | SCORE: <span id="score-val">0</span></div>
+        <div id="life-container">
+            <div class="pixel-heart"></div>
+            <div class="pixel-heart"></div>
+            <div class="pixel-heart"></div>
+            <div class="pixel-heart"></div>
+            <div class="pixel-heart"></div>
+        </div>
+    </div>
+
+    <div id="game-canvas">
+        <div id="start-screen" class="overlay">
+            <div class="overlay-header">📂 Program Manager</div>
+            <h2 style="margin: 10px;">대푯값 산성비 v1.0</h2>
+            <p style="font-size: 12px;">음악과 함께 암산을 시작하세요.</p>
+            <button class="btn" id="start-btn" style="padding: 10px 30px; margin: 15px;">시작(S)</button>
+            <div style="display:flex; justify-content:center; gap:10px;">
+                <button class="btn" onclick="toggleOverlay('guide')">도움말</button>
+                <button class="btn" onclick="toggleOverlay('concept')">개념</button>
+            </div>
+        </div>
+
+        <div id="guide-overlay" class="overlay hidden">
+            <div class="overlay-header">도움말</div>
+            <div class="text-box">
+                하늘에서 떨어지는 문제의 정답을 입력하고 Enter를 치세요. 바닥에 닿으면 목숨이 깎입니다.
+            </div>
+            <button class="btn" onclick="toggleOverlay('guide')">확인</button>
+        </div>
+
+        <div id="concept-overlay" class="overlay hidden">
+            <div class="overlay-header">개념 확인</div>
+            <div class="text-box">
+                • <b>평균</b>: 합계 / 개수<br>
+                • <b>중앙값</b>: 크기 순 나열 시 정가운데<br>
+                • <b>최빈값</b>: 가장 많이 나온 숫자
+            </div>
+            <button class="btn" onclick="toggleOverlay('concept')">확인</button>
+        </div>
+    </div>
+
+    <div id="bottom-bar">
+        <input type="number" id="answer-input" placeholder="?" autocomplete="off">
+        <p style="font-size: 11px; color: #444; margin-top: 5px;">Ready for Calculation...</p>
+    </div>
+</div>
+
+<script>
+    // 오디오 설정 (위에 생성된 곡을 다운로드하여 같은 폴더에 'bgm.mp3'로 저장하면 작동합니다)
+    // 혹은 아래 소스 경로를 실제 파일 경로로 수정하세요.
+    const bgm = new Audio('Turbo_Cartridge.mp3'); 
+    bgm.loop = true;
+    bgm.volume = 0.4;
+
+    const canvas = document.getElementById('game-canvas');
+    const input = document.getElementById('answer-input');
+    const lifeContainer = document.getElementById('life-container');
+    const scoreVal = document.getElementById('score-val');
+    const levelVal = document.getElementById('level-val');
+
+    let score = 0, lives = 5, level = 1, gameActive = false, problems = [];
+    let gameLoop, spawnLoop;
+
+    const diffSettings = {
+        1: { speed: 1.1, interval: 3500 },
+        2: { speed: 1.5, interval: 3000 },
+        3: { speed: 2.0, interval: 2500 },
+        4: { speed: 2.5, interval: 2000 },
+        5: { speed: 3.2, interval: 1500 }
+    };
+
+    function createProblem() {
+        if (!gameActive) return;
+        const types = ['평균', '중앙값', '최빈값'];
+        const type = types[Math.floor(Math.random() * 3)];
+        let nums = [], answer = 0;
+
+        if (type === '평균') {
+            const sum = (Math.floor(Math.random() * 5) + 1) * 3;
+            nums = [sum/3 - 1, sum/3, sum/3 + 1];
+            answer = sum / 3;
+        } else if (type === '중앙값') {
+            nums = [Math.floor(Math.random() * 10), Math.floor(Math.random() * 10 + 10), Math.floor(Math.random() * 10 + 20)].sort((a,b)=>a-b);
+            answer = nums[1];
+            nums.sort(() => Math.random() - 0.5);
+        } else {
+            const mode = Math.floor(Math.random() * 9) + 1;
+            nums = [mode, mode, Math.floor(Math.random() * 20)];
+            answer = mode;
+            nums.sort(() => Math.random() - 0.5);
+        }
+
+        const div = document.createElement('div');
+        div.className = 'problem';
+        div.innerHTML = `[${type}] ${nums.join(', ')}`;
+        div.dataset.answer = answer;
+        div.style.left = (Math.random() * (canvas.clientWidth - 150)) + 'px';
+        div.style.top = '0px';
+        canvas.appendChild(div);
+        problems.push(div);
+    }
+
+    function update() {
+        if (!gameActive) return;
+        problems.forEach((p, i) => {
+            let top = parseFloat(p.style.top);
+            top += diffSettings[level].speed;
+            p.style.top = top + 'px';
+
+            if (top > canvas.clientHeight - 20) {
+                p.remove();
+                problems.splice(i, 1);
+                lives--;
+                updateHearts();
+                if (lives <= 0) gameOver();
+            }
+        });
+
+        if (score >= level * 100 && level < 5) {
+            level++;
+            levelVal.innerText = level;
+            clearInterval(spawnLoop);
+            spawnLoop = setInterval(createProblem, diffSettings[level].interval);
+        }
+    }
+
+    function updateHearts() {
+        const hearts = lifeContainer.querySelectorAll('.pixel-heart');
+        hearts.forEach((h, i) => {
+            if (i >= lives) h.classList.add('heart-empty');
+        });
+    }
+
+    function gameOver() {
+        gameActive = false;
+        bgm.pause();
+        alert("GAME OVER\n최종 점수: " + score);
+        location.reload();
+    }
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const val = parseInt(input.value);
+            const idx = problems.findIndex(p => parseInt(p.dataset.answer) === val);
+            if (idx !== -1) {
+                problems[idx].remove();
+                problems.splice(idx, 1);
+                score += 20;
+                scoreVal.innerText = score;
+            }
+            input.value = '';
+        }
+    });
+
+    document.getElementById('start-btn').onclick = () => {
+        document.getElementById('start-screen').classList.add('hidden');
+        gameActive = true;
+        input.focus();
+        // 채팅창에서 생성된 음악을 재생하려면 아래 주석을 풀고 파일명을 맞추세요.
+        bgm.play(); 
+        gameLoop = setInterval(update, 20);
+        spawnLoop = setInterval(createProblem, diffSettings[level].interval);
+    };
+
+    function toggleOverlay(id) {
+        document.getElementById(id + '-overlay').classList.toggle('hidden');
+    }
+</script>
+</body>
+</html>

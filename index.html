@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>게임 시작</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Malgun Gothic', sans-serif;
+  }
+
+  /* 시작 화면 (모바일 자동재생 우회용) */
+  #startScreen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #000; color: #fff;
+    z-index: 30; cursor: pointer;
+  }
+  #startScreen h1 {
+    font-size: clamp(28px, 6vw, 56px);
+    margin-bottom: 30px;
+  }
+  #startScreen p {
+    font-size: clamp(16px, 3vw, 22px);
+    opacity: 0.8;
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  /* 영상 화면 */
+  #videoWrap {
+    position: fixed; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    background: #000; z-index: 20;
+  }
+  #introVideo {
+    width: 100%; height: 100%;
+    object-fit: contain;
+  }
+
+  /* 버튼 화면 */
+  #buttonScreen {
+    position: fixed; inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 40px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    z-index: 10;
+    padding: 20px;
+  }
+  #buttonScreen h2 {
+    color: #fff;
+    font-size: clamp(24px, 5vw, 42px);
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+  }
+  .btnBox {
+    display: flex; gap: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .gameBtn {
+    display: flex; flex-direction: column;
+    align-items: center;
+    background: #fff;
+    border: 4px solid #ffd700;
+    border-radius: 20px;
+    padding: 20px 30px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    min-width: 200px;
+  }
+  .gameBtn:hover, .gameBtn:active {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 10px 30px rgba(255,215,0,0.5);
+  }
+  .gameBtn img {
+    width: 120px; height: 120px;
+    object-fit: contain;
+    margin-bottom: 15px;
+  }
+  .gameBtn span {
+    font-size: clamp(18px, 3vw, 24px);
+    font-weight: bold;
+    color: #1e3c72;
+  }
+</style>
+</head>
+<body>
+
+  <!-- 1. 시작 화면 (사용자 터치 한 번 받기) -->
+  <div id="startScreen" onclick="startIntro()">
+    <h1>🎮 게임 시작 🎮</h1>
+    <p>화면을 터치하세요</p>
+  </div>
+
+  <!-- 2. 영상 -->
+  <div id="videoWrap">
+    <video id="introVideo" playsinline preload="auto">
+      <source src="intro.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- 3. 게임 선택 버튼 -->
+  <div id="buttonScreen">
+    <h2>게임을 선택하세요!</h2>
+    <div class="btnBox">
+      <div class="gameBtn" onclick="goGame('acid-rain.html')">
+        <img src="button.png" alt="산성비 게임">
+        <span>산성비 게임</span>
+      </div>
+      <div class="gameBtn" onclick="goGame('finger.html')">
+        <img src="button.png" alt="손가락 게임">
+        <span>손가락 게임</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 배경음악 (원하면 사용) -->
+  <audio id="bgm" src="Turbo_Cartridge.mp3" loop></audio>
+
+<script>
+  const startScreen = document.getElementById('startScreen');
+  const videoWrap   = document.getElementById('videoWrap');
+  const video       = document.getElementById('introVideo');
+  const buttonScreen= document.getElementById('buttonScreen');
+  const bgm         = document.getElementById('bgm');
+
+  // 시작 버튼 누르면 영상 재생
+  function startIntro() {
+    startScreen.style.display = 'none';
+    videoWrap.style.display = 'flex';
+    video.play().catch(err => {
+      console.log('영상 재생 실패:', err);
+      showButtons(); // 영상 못 틀면 바로 버튼 화면으로
+    });
+  }
+
+  // 영상 끝나면 버튼 표시
+  video.addEventListener('ended', showButtons);
+
+  function showButtons() {
+    videoWrap.style.display = 'none';
+    buttonScreen.style.display = 'flex';
+    // 배경음악 재생 (원하지 않으면 아래 줄 삭제)
+    bgm.volume = 0.5;
+    bgm.play().catch(()=>{});
+  }
+
+  // 게임 페이지로 이동
+  function goGame(url) {
+    bgm.pause();
+    window.location.href = url;
+  }
+</script>
+
+</body>
+</html>
