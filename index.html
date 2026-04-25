@@ -88,33 +88,29 @@
     width: auto; height: auto;
   }
 
-  /* 클릭 영역 (위/아래 절반) */
+  /* 클릭 영역 (위/아래 절반) - 색깔 효과 제거, 크기 효과만 유지 */
   .clickArea {
     position: absolute;
     left: 0;
     width: 100%;
     height: 50%;
     cursor: pointer;
-    transition: background 0.2s, transform 0.15s;
-    border-radius: 20px;
+    transition: transform 0.15s;
   }
   .clickArea.top    { top: 0; }
   .clickArea.bottom { bottom: 0; }
   .clickArea:hover, .clickArea:active {
-    background: rgba(255, 215, 0, 0.25);
-    transform: scale(1.02);
+    transform: scale(1.03);
   }
 </style>
 </head>
 <body>
 
-  <!-- 1. 영상 화면 (첫 화면) -->
+  <!-- 1. 영상 화면 -->
   <div id="videoWrap">
     <video id="introVideo" playsinline preload="metadata" controls controlslist="nodownload">
       <source src="intro.mp4" type="video/mp4">
     </video>
-
-    <!-- 큰 재생 버튼 오버레이 -->
     <div id="playOverlay" onclick="startVideo()">
       <div class="playButton"></div>
       <p>▶ 터치하여 시작</p>
@@ -140,6 +136,15 @@
   const buttonScreen = document.getElementById('buttonScreen');
   const bgm          = document.getElementById('bgm');
 
+  // URL에 ?skip=1 있으면 영상 건너뛰고 바로 버튼 화면
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('skip') === '1') {
+    videoWrap.style.display = 'none';
+    buttonScreen.style.display = 'flex';
+    bgm.volume = 0.5;
+    bgm.play().catch(()=>{});
+  }
+
   function startVideo() {
     playOverlay.classList.add('hidden');
     video.play().catch(err => {
@@ -148,7 +153,6 @@
     });
   }
 
-  // 영상 끝나면 버튼 화면으로
   video.addEventListener('ended', showButtons);
 
   function showButtons() {
