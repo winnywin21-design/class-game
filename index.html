@@ -14,29 +14,10 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* 1. 시작 화면 */
-  #startScreen {
-    position: fixed; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    background: #000; color: #fff;
-    z-index: 30; cursor: pointer;
-  }
-  #startScreen h1 {
-    font-size: clamp(28px, 6vw, 56px);
-    margin-bottom: 30px;
-  }
-  #startScreen p {
-    font-size: clamp(16px, 3vw, 22px);
-    opacity: 0.8;
-    animation: blink 1.5s infinite;
-  }
-  @keyframes blink { 50% { opacity: 0.3; } }
-
-  /* 2. 영상 화면 */
+  /* 1. 영상 화면 (첫 화면) */
   #videoWrap {
     position: fixed; inset: 0;
-    display: none;
+    display: flex;
     align-items: center; justify-content: center;
     background: #000; z-index: 20;
   }
@@ -45,7 +26,48 @@
     object-fit: contain;
   }
 
-  /* 3. 버튼 화면 (button.png 표시) */
+  /* 큰 재생 버튼 오버레이 */
+  #playOverlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 25;
+    transition: opacity 0.3s;
+  }
+  #playOverlay.hidden { opacity: 0; pointer-events: none; }
+
+  .playButton {
+    width: clamp(100px, 20vw, 160px);
+    height: clamp(100px, 20vw, 160px);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.5);
+    animation: pulse 1.8s infinite;
+  }
+  .playButton::after {
+    content: '';
+    width: 0; height: 0;
+    border-left: clamp(30px, 6vw, 50px) solid #1e3c72;
+    border-top: clamp(20px, 4vw, 32px) solid transparent;
+    border-bottom: clamp(20px, 4vw, 32px) solid transparent;
+    margin-left: 12px;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(255,255,255,0.5); }
+    50%      { transform: scale(1.08); box-shadow: 0 0 60px rgba(255,255,255,0.8); }
+  }
+  #playOverlay p {
+    color: #fff;
+    font-size: clamp(18px, 3.5vw, 26px);
+    margin-top: 25px;
+    font-weight: bold;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+  }
+
+  /* 2. 버튼 화면 (button.png 표시) */
   #buttonScreen {
     position: fixed; inset: 0;
     display: none;
@@ -78,8 +100,6 @@
   }
   .clickArea.top    { top: 0; }
   .clickArea.bottom { bottom: 0; }
-
-  /* 마우스/터치 시 살짝 빛나는 효과 */
   .clickArea:hover, .clickArea:active {
     background: rgba(255, 215, 0, 0.25);
     transform: scale(1.02);
@@ -88,26 +108,24 @@
 </head>
 <body>
 
-  <!-- 1. 시작 화면 -->
-  <div id="startScreen" onclick="startIntro()">
-    <h1>🎮 게임 시작 🎮</h1>
-    <p>화면을 터치하세요</p>
-  </div>
-
-  <!-- 2. 영상 (controls 옵션으로 컨트롤바 표시) -->
+  <!-- 1. 영상 화면 (첫 화면) -->
   <div id="videoWrap">
-    <video id="introVideo" playsinline preload="auto" controls controlslist="nodownload">
+    <video id="introVideo" playsinline preload="metadata" controls controlslist="nodownload">
       <source src="intro.mp4" type="video/mp4">
     </video>
+
+    <!-- 큰 재생 버튼 오버레이 -->
+    <div id="playOverlay" onclick="startVideo()">
+      <div class="playButton"></div>
+      <p>▶ 터치하여 시작</p>
+    </div>
   </div>
 
-  <!-- 3. 버튼 화면 -->
+  <!-- 2. 버튼 화면 -->
   <div id="buttonScreen">
     <div id="buttonContainer">
       <img src="button.png" alt="게임 선택">
-      <!-- 위쪽 절반: 산성비 게임 -->
-      <div class="clickArea top" onclick="goGame('acid-rain.html')"></div>
-      <!-- 아래쪽 절반: 손가락 게임 -->
+      <div class="clickArea top"    onclick="goGame('acid-rain.html')"></div>
       <div class="clickArea bottom" onclick="goGame('finger.html')"></div>
     </div>
   </div>
@@ -116,15 +134,14 @@
   <audio id="bgm" src="Turbo_Cartridge.mp3" loop></audio>
 
 <script>
-  const startScreen  = document.getElementById('startScreen');
   const videoWrap    = document.getElementById('videoWrap');
   const video        = document.getElementById('introVideo');
+  const playOverlay  = document.getElementById('playOverlay');
   const buttonScreen = document.getElementById('buttonScreen');
   const bgm          = document.getElementById('bgm');
 
-  function startIntro() {
-    startScreen.style.display = 'none';
-    videoWrap.style.display = 'flex';
+  function startVideo() {
+    playOverlay.classList.add('hidden');
     video.play().catch(err => {
       console.log('영상 재생 실패:', err);
       showButtons();
