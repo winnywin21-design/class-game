@@ -154,17 +154,19 @@
         /* ========== 모바일 반응형 (가로 800px 미만) ========== */
         @media (max-width: 800px) {
             body {
-                /* PC의 회색 데스크톱 배경 → 모바일은 검정 (게임에 집중) */
-                background-color: #000;
+                /* PC와 동일한 청록색 배경 유지 */
+                background-color: #008080;
                 align-items: stretch;
                 height: 100dvh; /* 동적 뷰포트 높이 (모바일 주소창 고려) */
+                padding: 4px; /* 박스 테두리가 살짝 떨어져 보이도록 */
             }
 
             #game-container {
                 width: 100%;
-                height: 100dvh;
-                box-shadow: none;
-                border: none;
+                height: 100%;
+                /* 윈도우 95 박스 테두리 유지 (PC와 동일) */
+                box-shadow: none; /* 그림자만 제거 (좁은 화면에서 답답함 방지) */
+                /* border와 border-color는 PC 스타일 그대로 상속받음 */
                 /* flex로 만들어서 위/아래 배치 정확히 잡기 */
                 display: flex;
                 flex-direction: column;
@@ -179,15 +181,19 @@
             #bottom-bar {
                 order: -1; /* flex 순서 변경: 위로 올림 */
                 flex-shrink: 0;
-                height: 70px;
-                padding: 8px;
+                height: 60px;
+                padding: 6px;
+                /* 돌아가기 버튼이 왼쪽 위에 있으니까 입력창을 오른쪽으로 밀기 */
+                padding-left: 130px;
+                padding-right: 10px;
+                align-items: flex-end; /* 오른쪽 정렬 */
             }
 
             #answer-input {
-                font-size: 22px;
-                width: 60%;
-                max-width: 250px;
-                height: 36px;
+                font-size: 20px;
+                width: 100%;
+                max-width: 180px;
+                height: 34px;
             }
 
             #bottom-bar p {
@@ -214,10 +220,10 @@
 
             /* 돌아가기 버튼 모바일에서 살짝 작게 */
             body > a[href*="index.html"] {
-                top: 8px !important;
+                top: 12px !important;
                 left: 8px !important;
-                padding: 6px 12px !important;
-                font-size: 13px !important;
+                padding: 5px 10px !important;
+                font-size: 12px !important;
             }
         }
     </style>
